@@ -1,0 +1,7 @@
+{
+  "name": "antoniocarboni/magento2-gulp",
+  "description": "New Magento2 gulpfile",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "magento2-component"
+}
