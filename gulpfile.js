@@ -33,14 +33,19 @@ var gulp =          require('gulp'),
  - Get Paths
  ============================================================ */
 var rootToPath          = '../../../',    // Relative path for Root
+    configPathTaskLoader   = false,          // Init var configPath for installer
     rootToPathClone     = rootToPath,     // Used for internal gulp paths
     configPath          = false;          // Init var configPath for installer
 
 // Check configPath.js exist
 if(fs.existsSync('configPath.js')){
     configPath = require('./configPath').path;
+    configPathTaskLoader = configPath;
+
 }
 if(fs.existsSync('vendor')){
+    configPath = require('./configPath').path;
+    configPathTaskLoader = require(rootToPath +'configPath').path;
     rootToPath = '';
 }
 
@@ -470,9 +475,6 @@ gulp.task('prepare-dev', function(cb) {
 // TODO:  integrate CSS e LESS lint
 
 
-
 // Load Custom Extra Tasks
-require('gulp-task-loader')({
-    dist:'extra'
-});
+require('gulp-task-loader')(configPathTaskLoader + 'gulp-tasks');
 
