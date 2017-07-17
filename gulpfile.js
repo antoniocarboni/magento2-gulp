@@ -33,7 +33,7 @@ var gulp =          require('gulp'),
  - Get Paths
  ============================================================ */
 var rootToPath          = '../../../',    // Relative path for Root
-    configPathTaskLoader   = false,          // Init var configPath for installer
+    configPathTaskLoader   = './dev/',          // Init var configPath for installer
     rootToPathClone     = rootToPath,     // Used for internal gulp paths
     configPath          = false;          // Init var configPath for installer
 
