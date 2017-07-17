@@ -1,0 +1,35 @@
+'use strict';
+
+module.exports = {
+  options: {
+    sourcemap: true,
+      minicss: true,
+      liveReload: false
+  },
+    watch: {
+        singletheme: 'luma',
+        js: true,
+        template: true,
+        layout: true,
+        html: true
+  },
+    deploy: {
+        enableDefaultTask: true,
+        defaultTask:  '--language it_IT --theme Magento/luma',
+        staticFolderToClear: ['pub/static/frontend/Magento/luma/it_IT']
+    },
+  browsersync: {
+     enabled: true,
+     configs: {
+       ghostmode: ['clicks: true, forms: true, scroll: true'],
+       logPrefix: "AC_Gulp",
+       open: false,
+       reloadOnRestart: false,
+       scrollProportionally: true
+     }
+   },
+    mapVendor: {
+        luma: 'magento/theme-frontend-luma/'
+    }
+
+};
