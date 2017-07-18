@@ -169,31 +169,31 @@ if(configPath) {
      // Enable and Override Configs by arguments
      ========================================================================== */
 
-    if (sourceMaps === false) {
-        sourceMaps = cmdArguments.indexOf("map");  // if --map is used, result 1
+    if (sourceMaps === false && cmdArguments.indexOf("map") >= 0 ) {  // if --map is used, result 1
+        sourceMaps = true;
     }
-    if (minicss === false) {
-        minicss = cmdArguments.indexOf("min");  // if --map is used, result 1
+    if (minicss === false && cmdArguments.indexOf("min") >= 0 ) { // if --map is used, result 1
+        minicss = true;
     }
-    if (browsersyncOn === false) {
-        browsersyncOn = cmdArguments.indexOf("sync"); // if --sync is used, result 1
+    if (browsersyncOn === false && cmdArguments.indexOf("sync") >= 0) {    // if --sync is used, result 1
+        browsersyncOn = true;
     }
-    if (livereload() === false) {
-        livereload = cmdArguments.indexOf("live"); // if --live is used, result 1
+    if (livereload() === false && cmdArguments.indexOf("live") >= 0) {    // if --live is used, result 1
+        livereload = true;
     }
 
     if (cmdArguments.indexOf("watch")) {
-        if (watch_js === false) {
-            watch_js = cmdArguments.indexOf("js");
+        if (watch_js === false && cmdArguments.indexOf("js") >= 0) {
+            watch_js = true;
         }
-        if (watch_xml === false) {
-            watch_xml = cmdArguments.indexOf("xml");
+        if (watch_xml === false && cmdArguments.indexOf("xml") >= 0) {
+            watch_xml = true;
         }
-        if (watch_phtml === false) {
-            watch_phtml = cmdArguments.indexOf("phtml");
+        if (watch_phtml === false && cmdArguments.indexOf("phtml") >= 0) {
+            watch_phtml = true;
         }
-        if (watch_html === false) {
-            watch_html = cmdArguments.indexOf("html");
+        if (watch_html === false && cmdArguments.indexOf("html") >= 0) {
+            watch_html = true;
         }
     }
 
@@ -325,7 +325,7 @@ gulp.task('less', function() {
 
     gulp.src(lessFiles)
     // Source map
-        .pipe(gulpif(sourceMaps, sourcemaps.init()))
+        .pipe(gulpif(sourceMaps, sourcemaps.init({largeFile: true})))
         // Less compilation
         .pipe(less().on('error', function(err) {
             console.log(err.error);
@@ -333,7 +333,7 @@ gulp.task('less', function() {
         // Minify css
         .pipe(gulpif(minicss, cssmin()))
         // Insert Source Maps
-        .pipe(gulpif(sourceMaps, sourcemaps.write('.')))
+        .pipe(gulpif(sourceMaps, sourcemaps.write()))
         // Set Destionation
         .pipe(gulp.dest( path + 'css/'))
         // Set Browsersync stream for injection css
