@@ -431,7 +431,6 @@ gulp.task('watch', function() {
 
     // Watch all files & notify for files added or deleted
     if(notify_all) {
-        console.log('lorg');
         gulp.watch([vendorPath + '/**/*'], function (event) {
             if(watch_media || !extPermittedMedia.includes(ext(event.path))) {
                 if (event.type === 'deleted' || event.type === 'added') {
@@ -471,6 +470,40 @@ gulp.task('watch', function() {
             gutil.log('Changed File: \x1b[36m' + changed.path + '\x1b[0m');
         });
     }
+
+});
+
+gulp.task('superwatch', function () {
+    //TODO: Watch multiple themes
+    if(!themeName){
+        gutil.log('\x1b[31mPlease specify a theme"\x1b[0m');
+        process.exit();
+    }
+    console.log('================================================================');
+    gutil.log( 'Watching \x1b[1m\x1b[92m', themesConfigs[themeName].area + '/' + themesConfigs[themeName].name  ,'\x1b[0m' );
+
+    console.log('------------------------------------------');
+
+    // Init browsersync
+    if(browsersyncOn) {
+        gutil.log('- BrowserSync:\x1b[32m', ' Initializing..........','\x1b[0m');
+        browserSync.init(browsersyncConfigs.configs);
+        console.log('------------------------------------------');
+    }
+
+    gulp.watch([vendorPath + '/**/*'], function (event) {
+        if(watch_media || !extPermittedMedia.includes(ext(event.path))) {
+            if (event.type === 'deleted' || event.type === 'added') {
+                gutil.log(gutil.colors.red('--------------------------------------------------------------------'));
+                gutil.log(gutil.colors.red('--------------------------------------------------------------------'));
+                gutil.log(gutil.colors.red('!!! - You have ' + event.type + ' a File: \x1b[91m' + event.path + '\x1b[0m'));
+                gutil.log(gutil.colors.red('!!! - You need to stop watch task and run "\x1b[91mgulp exec --' + themeName + '\x1b[0m'));
+                gutil.log(gutil.colors.red('--------------------------------------------------------------------'));
+                gutil.log(gutil.colors.red('--------------------------------------------------------------------'));
+
+            }
+        }
+    });
 
 });
 
