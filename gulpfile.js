@@ -26,16 +26,20 @@ var gulp =          require('gulp'),
     runSequence =   require('run-sequence'),
     del =           require('del'),
     vinylPaths =    require('vinyl-paths'),
+    ext =           require('file-extension'),
     gutil =         require('gulp-util');
+
+
 
 
 /* ===========================================================
  - Get Paths
  ============================================================ */
-var rootToPath          = '../../../',    // Relative path for Root
-    configPathTaskLoader   = './dev/',          // Init var configPath for installer
-    rootToPathClone     = rootToPath,     // Used for internal gulp paths
-    configPath          = false;          // Init var configPath for installer
+var rootToPath              = '../../../',    // Relative path for Root
+    configPathTaskLoader    = './dev/',          // Init var configPath for installer
+    rootToPathClone         = rootToPath,     // Used for internal gulp paths
+    configPath              = false;          // Init var configPath for installer
+    extPermittedMedia       = ['png','jpg','jpeg','gif','svg','ico','bmp','tiff','exif','bat'];
 
 // Check configPath.js exist
 if(fs.existsSync('configPath.js')){
@@ -162,7 +166,12 @@ if(configPath) {
     var watch_xml = watchConfigs.layout;
     var watch_phtml = watchConfigs.template;
     var watch_html = watchConfigs.html;
+    var watch_media = watchConfigs.media;
+    var notify_all = watchConfigs.notifyAll;
+    var watch_img_folders = watchConfigs.mediaFolders;
     var deployTask = deployTaskConfig.enableDefaultTask;
+
+    var srcImage = [];
 
 
     /* ==========================================================================
@@ -194,6 +203,12 @@ if(configPath) {
         }
         if (watch_html === false && cmdArguments.indexOf("html") >= 0) {
             watch_html = true;
+        }
+        if (watch_media === false && cmdArguments.indexOf("media") >= 0) {
+            watch_media = true;
+        }
+        if (notify_all === false && cmdArguments.indexOf("notify") >= 0) {
+            notify_all = true;
         }
     }
 
@@ -262,7 +277,8 @@ if(!skipThemeCheck) {
                 pathsThemes.push(path);
             }
 
-            var vendorPath = '';
+            var vendorPath = '';   // TODO: manage multiple vendor path
+            //srcImage.push(vendorPath + 'images/',vendorPath + 'media/');
 
             // Add LESS theme files
             for (j in themesConfigs[i].files) {
@@ -282,7 +298,14 @@ if(!skipThemeCheck) {
         var path = './pub/static/' + themesConfigs[themeName].area + '/' + themesConfigs[themeName].name + '/' + themesConfigs[themeName].locale + '/';
         pathsThemes.push(path);
 
-        vendorPath = './vendor/' + vendorPathConfigs[themeName];
+        vendorPath = 'vendor/' + vendorPathConfigs[themeName];
+
+        srcImage.push(vendorPath + 'web/images/*',vendorPath + 'media/*');
+        if(watch_img_folders) {
+            for (i in watch_img_folders ) {
+                srcImage.push(vendorPath + watch_img_folders[i]);
+            }
+        }
 
         /// Add LESS theme files
         for (i in themesConfigs[themeName].files) {
@@ -354,6 +377,7 @@ gulp.task('browser-sync', function (cb) {
 
 // Watcher task
 gulp.task('watch', function() {
+    //TODO: Watch multiple themes
     if(!themeName){
         gutil.log('\x1b[31mPlease specify a theme"\x1b[0m');
         process.exit();
@@ -376,10 +400,52 @@ gulp.task('watch', function() {
     }
 
     // Watch less files
-
     gulp.watch([path + '**/*.less'],['less']);
 
+    // Watch Images & media
+    if(watch_media) {
+        gulp.watch('vendor/bitbull/theme-frontend-goldenpoint/web/images/*', function (event) {
 
+            var symlink = require('gulp-symlink');
+            var delSymlink = require('del-symlinks');
+
+            if (extPermittedMedia.includes(ext(event.path))) {
+                if (event.type === 'deleted') {
+                    gutil.log(gutil.colors.red('You have deleted a File: \x1b[91m' + event.path + '\x1b[0m'));
+                    var partialPathChanged = event.path.replace(process.cwd() + '/' + vendorPath, '');
+                    delSymlink(staticFolders + '/' + themesConfigs[themeName].locale + '/' + partialPathChanged);
+                    gutil.log(gutil.colors.red('Deleted symlink from: \x1b[91m' + vendorPath + partialPathChanged + '\x1b[0m'));
+
+                }
+                if (event.type === 'added') {
+                    gutil.log(gutil.colors.red('You have added a File: \x1b[91m' + event.path + '\x1b[0m'));
+                    var partialPathChanged = event.path.replace(process.cwd() + '/' + vendorPath, '');
+                    pathToSymlink = staticFolders + '/' + themesConfigs[themeName].locale + '/' + partialPathChanged;
+                    gulp.src(event.path)
+                        .pipe(symlink(pathToSymlink));
+                    gutil.log(gutil.colors.red('Added symlink from: \x1b[91m' + pathToSymlink + '\x1b[0m'));
+                }
+            }
+        });
+    }
+
+    // Watch all files & notify for files added or deleted
+    if(notify_all) {
+        console.log('lorg');
+        gulp.watch([vendorPath + '/**/*'], function (event) {
+            if(watch_media || !extPermittedMedia.includes(ext(event.path))) {
+                if (event.type === 'deleted' || event.type === 'added') {
+                    gutil.log(gutil.colors.red('--------------------------------------------------------------------'));
+                    gutil.log(gutil.colors.red('--------------------------------------------------------------------'));
+                    gutil.log(gutil.colors.red('!!! - You have ' + event.type + ' a File: \x1b[91m' + event.path + '\x1b[0m'));
+                    gutil.log(gutil.colors.red('!!! - You need to stop watch task and run "\x1b[91mgulp exec --' + themeName + '\x1b[0m'));
+                    gutil.log(gutil.colors.red('--------------------------------------------------------------------'));
+                    gutil.log(gutil.colors.red('--------------------------------------------------------------------'));
+
+                }
+            }
+        });
+    }
 
     if(watch_js) {
         gutil.log('Add \x1b[32mJS files\x1b[0m to watching...');
@@ -440,8 +506,7 @@ gulp.task('clean', function (cb) {
     for (i in pathsThemes) {
         gutil.log('Cleaning ' + gutil.colors.magenta(pathsThemes[i]));
         gulp.src(pathsThemes[i])
-            .pipe(vinylPaths(del))
-            .pipe(gulp.dest('dist'));
+            .pipe(vinylPaths(del));
     }
     gutil.log('"pub/static" folders specified are empty now.');
 });

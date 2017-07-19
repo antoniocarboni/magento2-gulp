@@ -11,7 +11,10 @@ module.exports = {
         js: true,
         template: true,
         layout: true,
-        html: true
+        html: true,
+        media: true,
+        mediaFolders: [ 'web/video/*' ],
+        notifyAll: true
   },
     deploy: {
         enableDefaultTask: true,

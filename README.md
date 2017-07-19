@@ -38,6 +38,9 @@ The file `dev/configs.js` for this gulpfile has some options:
 - `layout`: Enables watch task for .xml files (true/false)
 - `template`: Enables watch task for .phtml files (true/false)
 - `html`: Enables watch task for .html files (true/false)
+- `media`: Enables watch task for media files (true/false)
+- `mediaFolders`: add custom folders used for images, video or others file which aren't managed by magento direclty and which will contain new files; paths starts on root theme path
+- `notifyAll`: Watch everything on vendor folder theme. The watch task will notice changes (added or deleted files) that require an 'gulp exec' for generate symlinks in pub folder 
 ### deploy
 - `enableDefaultTask`: if set, task deploy without arguments uses a default task set (true/false)
 - `defaultTask`:  default task to run if enableDefaultTask is enabled
