@@ -431,7 +431,6 @@ gulp.task('watch', function() {
 
     // Watch all files & notify for files added or deleted
     if(notify_all) {
-        console.log('lorg');
         gulp.watch([vendorPath + '/**/*'], function (event) {
             if(watch_media || !extPermittedMedia.includes(ext(event.path))) {
                 if (event.type === 'deleted' || event.type === 'added') {
