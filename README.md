@@ -1,4 +1,8 @@
 # magento2-gulp
+
+[![Latest Release][ico-version]][link-release]
+
+
 A new gulpfile for Magento 2
 
 
@@ -45,6 +49,10 @@ The file `dev/configs.js` for this gulpfile has some options:
 - `enableDefaultTask`: if set, task deploy without arguments uses a default task set (true/false)
 - `defaultTask`:  default task to run if enableDefaultTask is enabled
 - `staticFolderToClear`: set full path of pub/static theme to clear before deploy.
+### exec
+- `enableDefaultTask`: if set, task deploy without arguments uses a default task set (true/false)
+- `defaultTask`:  default task to run if enableDefaultTask is enabled
+- `staticFolderToClear`: set full path of pub/static theme to clear before to soure theme deploy.
 ### browsersync
 - `enabled`: enable browsersync
 for more informations & all configurations visit [https://browsersync.io/docs](https://browsersync.io/docs) 

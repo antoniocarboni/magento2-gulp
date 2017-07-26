@@ -129,6 +129,7 @@ gulp.task('install', function(cb) {
     }
 });
 
+
 // Check if script is installed on dev folder
 if(!configPath) {
     if(commands[0] !== 'install') {
@@ -151,6 +152,7 @@ if(configPath) {
         watchConfigs = require(configPath + 'configs').watch,
         browsersyncConfigs = require(configPath + 'configs').browsersync,
         deployTaskConfig = require(configPath + 'configs').deploy,
+        execTaskConfig = require(configPath + 'configs').exec,
         vendorPathConfigs = require(configPath + 'configs').mapVendor;
 
 
@@ -170,6 +172,7 @@ if(configPath) {
     var notify_all = watchConfigs.notifyAll;
     var watch_img_folders = watchConfigs.mediaFolders;
     var deployTask = deployTaskConfig.enableDefaultTask;
+    var execyTask = execTaskConfig.enableDefaultTask;
 
     var srcImage = [];
 
@@ -229,8 +232,8 @@ if(configPath) {
 if(command === 'deploy') {
     var deployCommand = '';
     if(deployTask && !cmdArguments[0]) {  //if default task is enabled & command haven't arguments
-        gutil.log('Loading ',gutil.colors.yellow('Gulp Default Task'));
         deployCommand = deployTaskConfig.defaultTask;
+        gutil.log('Loading ',gutil.colors.yellow('Gulp Default Task: '), gutil.colors.green(deployCommand));
         skipThemeCheck = true;
         pathsThemes = deployTaskConfig.staticFolderToClear;
     }
@@ -246,6 +249,22 @@ if(command === 'deploy') {
         if (cmdArguments[1]) {
             themeName = cmdArguments[1];
             deployCommand += ' --theme ' + themesConfigs[themeName].name;
+        }
+    }
+}
+else if(command === 'exec') {
+    var execCommand = '';
+    if(deployTask && !cmdArguments[0]) {  //if default task is enabled & command haven't arguments
+        execCommand = execTaskConfig.defaultTask;
+        gutil.log('Loading ',gutil.colors.yellow('Gulp Default Task: '), gutil.colors.green(execCommand));
+        skipThemeCheck = true;
+        pathsThemes = execTaskConfig.staticFolderToClear;
+    }
+    else {
+        //TODO: to expand function for accept parameters
+        if (cmdArguments[0]) {
+            themeName = cmdArguments[0];
+            execCommand += ' --locale="' + themesConfigs[themeName].locale + '" --area="' + themesConfigs[themeName].area + '" --theme="' + themesConfigs[themeName].name + '"';
         }
     }
 }
@@ -361,9 +380,11 @@ gulp.task('less', function() {
         .pipe(gulp.dest( path + 'css/'))
         // Set Browsersync stream for injection css
         .pipe(gulpif(browsersyncOn, browserSync.stream()))
+
+        .on('error', gutil.log);
     // Live reload
     //.pipe(gulpif(liveReload, livereload()))   // Not Work for injection,  TODO: resolve this bug
-    ;
+
     console.log('------------------------------------------');
 });
 
@@ -432,7 +453,7 @@ gulp.task('watch', function() {
     // Watch all files & notify for files added or deleted
     if(notify_all) {
         gulp.watch([vendorPath + '/**/*'], function (event) {
-            if(watch_media || !extPermittedMedia.includes(ext(event.path))) {
+            if(!watch_media || !extPermittedMedia.includes(ext(event.path))) {
                 if (event.type === 'deleted' || event.type === 'added') {
                     gutil.log(gutil.colors.red('--------------------------------------------------------------------'));
                     gutil.log(gutil.colors.red('--------------------------------------------------------------------'));
@@ -473,24 +494,47 @@ gulp.task('watch', function() {
 
 });
 
+gulp.task('superwatch', function () {
+    //TODO: Watch multiple themes
+    if(!themeName){
+        gutil.log('\x1b[31mPlease specify a theme"\x1b[0m');
+        process.exit();
+    }
+    console.log('================================================================');
+    gutil.log( 'Watching \x1b[1m\x1b[92m', themesConfigs[themeName].area + '/' + themesConfigs[themeName].name  ,'\x1b[0m' );
+
+    console.log('------------------------------------------');
+
+    // Init browsersync
+    if(browsersyncOn) {
+        gutil.log('- BrowserSync:\x1b[32m', ' Initializing..........','\x1b[0m');
+        browserSync.init(browsersyncConfigs.configs);
+        console.log('------------------------------------------');
+    }
+
+    gulp.watch([vendorPath + '/**/*'], function (event) {
+        if(!watch_media || watch_media && !extPermittedMedia.includes(ext(event.path))) {
+            if (event.type === 'deleted' || event.type === 'added') {
+                gutil.log(gutil.colors.red('--------------------------------------------------------------------'));
+                gutil.log(gutil.colors.red('--------------------------------------------------------------------'));
+                gutil.log(gutil.colors.red('!!! - You have ' + event.type + ' a File: \x1b[91m' + event.path + '\x1b[0m'));
+                gutil.log(gutil.colors.red('!!! - You need to stop watch task and run "\x1b[91mgulp exec --' + themeName + '"\x1b[0m'));
+                gutil.log(gutil.colors.red('--------------------------------------------------------------------'));
+                gutil.log(gutil.colors.red('--------------------------------------------------------------------'));
+
+            }
+        }
+    });
+
+});
+
 
 // Exec task
-gulp.task('exec', function (cb) {
-    if (themeName) {
-        exec('php bin/magento dev:source-theme:deploy --locale="' + themesConfigs[themeName].locale + '" --area="' + themesConfigs[themeName].area + '" --theme="' + themesConfigs[themeName].name + '"', function (err, stdout, stderr) {
-            console.log('\x1b[90m'+ stdout + '\x1b[0m');
-            console.log('\x1b[31m'+ stderr + '\x1b[0m');
-            cb(err);
-        });
-    }
-    else {
-        gutil.log('\x1b[31mUndefined Theme \x1b[0m');
-    }
-});
+gulp.task('exec', ['clean','source-theme-deploy']);
 
 gulp.task('deploy', ['clean','static-content-deploy']);
 
-// yoy Static content
+// deploy Static content
 gulp.task('static-content-deploy', function (cb) {
     gutil.log('Start', gutil.colors.cyan('Deploying Magento application'), '...');
     exec('php bin/magento setup:static-content:deploy ' + deployCommand +  '', function (err, stdout, stderr) {
@@ -499,6 +543,17 @@ gulp.task('static-content-deploy', function (cb) {
         cb(err);
     });
 });
+
+
+// dev source theme deploy
+gulp.task('source-theme-deploy', function (cb) {
+    exec('php bin/magento dev:source-theme:deploy ' + execCommand + '', function (err, stdout, stderr) {
+        console.log('\x1b[90m'+ stdout + '\x1b[0m');
+        console.log('\x1b[31m'+ stderr + '\x1b[0m');
+        cb(err);
+    });
+});
+
 
 // cache flush task
 gulp.task('clean', function (cb) {

@@ -21,6 +21,11 @@ module.exports = {
         defaultTask:  '--language it_IT --theme Magento/luma',
         staticFolderToClear: ['pub/static/frontend/Magento/luma/it_IT']
     },
+    exec: {
+        enableDefaultTask: true,
+        defaultTask:  '--locale="it_IT" --area="frontend" --theme="Magento/luma"',
+        staticFolderToClear: ['pub/static/frontend/Magento/luma/it_IT']
+        },
   browsersync: {
      enabled: true,
      configs: {

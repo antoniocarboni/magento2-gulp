@@ -34,7 +34,8 @@
     "colors": "^1.1.2",
     "file-extension": "^3.1.2",
     "gulp-symlink": "^2.1.4",
-    "del-symlinks": "^0.1.2"
+    "del-symlinks": "^0.1.2",
+    "gulp-task-loader": "^1.4.4"
   }
 }
 
