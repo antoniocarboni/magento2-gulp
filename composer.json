@@ -1,16 +1,15 @@
 {
-  "name": "antoniocarboni/magento2-gulp",
+  "name": "magenio-it/magento2-gulp",
   "description": "New Magento2 gulpfile",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "license": "MIT",
   "type": "magento2-component",
     "extra": {
         "map": [
             [ "gulpfile.js", "gulpfile.js"],
             ["dev/gulp-tasks", "dev/gulp-tasks"],
-            ["dev/config.js.sample", "dev/config.js.sample"],
+            ["gulp-configs.sample.js", "gulp-configs.sample.js"],
             ["package.gulp.json.sample", "package.gulp.json.sample"]
-        ],
-        "magento-deploystrategy": "copy"
+        ]
     }
 }

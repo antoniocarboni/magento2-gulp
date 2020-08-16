@@ -1,8 +1,8 @@
 /*****************************************************************************
- *  =========================== OPTIONS ====================================
- *
- *
-******************************************************************************/
+ ** Author: Antonio Carboni
+ ** Email: a.carboni@magenio.com
+ ** Website: https://www.magenio.com/
+ ****************************************************************************/
 
 
 
@@ -16,8 +16,8 @@ var gulp =          require('gulp'),
     less =          require('gulp-less'),
     sourcemaps =    require('gulp-sourcemaps'),
     cssmin =        require('gulp-cssmin'),
-   // lesshint =    require('gulp-lesshint'),
-   // csslint =     require('gulp-csslint'),
+    // lesshint =    require('gulp-lesshint'),
+    // csslint =     require('gulp-csslint'),
     livereload =    require('gulp-livereload'),
     browserSync =   require('browser-sync').create(),
     gulpif =        require('gulp-if'),
@@ -30,28 +30,6 @@ var gulp =          require('gulp'),
     gutil =         require('gulp-util');
 
 
-
-
-/* ===========================================================
- - Get Paths
- ============================================================ */
-var rootToPath              = '../../../',    // Relative path for Root
-    configPathTaskLoader    = './dev/',          // Init var configPath for installer
-    rootToPathClone         = rootToPath,     // Used for internal gulp paths
-    configPath              = false;          // Init var configPath for installer
-    extPermittedMedia       = ['png','jpg','jpeg','gif','svg','ico','bmp','tiff','exif','bat'];
-
-// Check configPath.js exist
-if(fs.existsSync('configPath.js')){
-    configPath = require('./configPath').path;
-    configPathTaskLoader = configPath;
-
-}
-if(fs.existsSync('vendor')){
-    configPath = require('./configPath').path;
-    configPathTaskLoader = require(rootToPath +'configPath').path;
-    rootToPath = '';
-}
 
 
 /* ===========================================================
@@ -78,205 +56,82 @@ for (i=nargv; i <= process.argv.length - 1; i++) {
 }
 argumentsClone = cmdArguments;  // for install task
 
-
-/* ===========================================================
- - Installer
- ============================================================ */
-
-gulp.task('install', function(cb) {
-    if(!configPath) {
-        if (gulp.task('logo')) {
-            runSequence('logo');
-        }
-        var customPathInstall = 'dev/tools/gulp2';
-        if(argumentsClone[0]){
-            customPathInstall = argumentsClone[0];
-        }
-
-        gutil.log('Installing gulpfile on: ', gutil.colors.cyan(customPathInstall));
-
-        configPath = customPathInstall;
-        var symlink = require('gulp-symlink');
-        originPath = 'dev';
-        originPathGulpFile = 'gulpfile.js';
-
-        destinationPath = '../../../';
-
-        exec('rm -rf '+ destinationPath +'gulpfile.js ' + destinationPath + configPath);
-
-        gutil.log('Creation symlink...');
-
-        gulp.src(originPath)
-            .pipe(symlink(destinationPath + configPath));
-        gulp.src(originPathGulpFile)
-            .pipe(symlink(destinationPath +'gulpfile.js'));
-
-
-        gutil.log('Creating configPath file...');
-
-        gulp.src(originPath)
-            .pipe(file('configPath.js','module.exports = { path:  \''+ configPath +'/\' };'))
-            .pipe(gulp.dest(destinationPath));
-
-        gulp.src(originPath)
-            .pipe(file('configPath.js','module.exports = { path:  \''+ rootToPath + configPath +'/\' };'))
-            .pipe(gulp.dest('./'));
-
-        gutil.log(gutil.colors.green('configPath file created'));
+gulp.cdebug = function(msg) {
+    if(gulpConfigs.debug) {
+        console.log('#######: ' + msg);
     }
-    else {
-        gutil.log('\x1b[31mScript already installed"\x1b[0m');
-    }
-});
+};
 
 
-// Check if script is installed on dev folder
-if(!configPath) {
-    if(commands[0] !== 'install') {
-        gutil.log('\x1b[31mScript not installed. Please run "gulp install"\x1b[0m');
-        process.exit();
-    }
+/* ==========================================================================
+    - Global Configurations
+    ========================================================================== */
+var gruntThemes             = require('./dev/tools/grunt/configs/themes.js');
+gruntLocalThemes        = require('./dev/tools/grunt/configs/local-themes.js');
+configPath = require('./gulp-configs');
+gulpConfigs = configPath.options,
+    lessConfigs = configPath.less,
+    watchConfigs = configPath.watch,
+    browsersyncConfigs = configPath.browsersync
+execTaskConfig = configPath.exec
+
+gulp.cdebug('==============================================================');
+gulp.cdebug('gulp configs:');
+gulp.cdebug(configPath);
+gulp.cdebug('==============================================================');
+
+/* ==========================================================================
+    Variables & Default Configs
+========================================================================== */
+
+var sourceMaps = gulpConfigs.sourcemap;
+var minicss = gulpConfigs.minicss;
+var liveReload = gulpConfigs.liveReload;
+var browsersyncOn = gulpConfigs.browsersync;
+var watch_js = watchConfigs.js;
+var watch_xml = watchConfigs.layout;
+var watch_phtml = watchConfigs.template;
+var watch_html = watchConfigs.html;
+var watch_media = watchConfigs.media;
+var notify_all = watchConfigs.notifyAll;
+var watch_img_folders = watchConfigs.mediaFolders;
+
+var srcImage = [];
+
+if(gruntLocalThemes) {
+    themesConfigs = gruntLocalThemes;
+    gulp.cdebug('Loaded local-themes.js:');
+    gulp.cdebug(themesConfigs);
+    gulp.cdebug('==============================================================');
+}
+else {
+    themesConfigs = gruntThemes;
+    gulp.cdebug('Loaded themes.js:');
+    gulp.cdebug(themesConfigs);
+    gulp.cdebug('==============================================================');
 }
 
 
+var lessFiles = [];
+var cssFiles = [];
+var themeList = [];
+var staticFolders = [];
+var paths = [];
+var themeName = '';   // Skip Theme Check Declaration (for direct command)
 
-
-
-
-if(configPath) {
-    /* ==========================================================================
-     - Global Configurations
-     ========================================================================== */
-    var themesConfigs = require(rootToPathClone + './dev/tools/grunt/configs/themes'),
-        gulpConfigs = require(configPath + 'configs').options,
-        watchConfigs = require(configPath + 'configs').watch,
-        browsersyncConfigs = require(configPath + 'configs').browsersync,
-        deployTaskConfig = require(configPath + 'configs').deploy,
-        execTaskConfig = require(configPath + 'configs').exec,
-        vendorPathConfigs = require(configPath + 'configs').mapVendor;
-
-
-
-    /* ==========================================================================
-     Variables & Default Configs
-     ========================================================================== */
-    var sourceMaps = gulpConfigs.sourcemap;
-    var minicss = gulpConfigs.minicss;
-    var liveReload = gulpConfigs.liveReload;
-    var browsersyncOn = browsersyncConfigs.enabled;
-    var watch_js = watchConfigs.js;
-    var watch_xml = watchConfigs.layout;
-    var watch_phtml = watchConfigs.template;
-    var watch_html = watchConfigs.html;
-    var watch_media = watchConfigs.media;
-    var notify_all = watchConfigs.notifyAll;
-    var watch_img_folders = watchConfigs.mediaFolders;
-    var deployTask = deployTaskConfig.enableDefaultTask;
-    var execyTask = execTaskConfig.enableDefaultTask;
-
-    var srcImage = [];
-
-
-    /* ==========================================================================
-     // Enable and Override Configs by arguments
-     ========================================================================== */
-
-    if (sourceMaps === false && cmdArguments.indexOf("map") >= 0 ) {  // if --map is used, result 1
-        sourceMaps = true;
-    }
-    if (minicss === false && cmdArguments.indexOf("min") >= 0 ) { // if --map is used, result 1
-        minicss = true;
-    }
-    if (browsersyncOn === false && cmdArguments.indexOf("sync") >= 0) {    // if --sync is used, result 1
-        browsersyncOn = true;
-    }
-    if (livereload() === false && cmdArguments.indexOf("live") >= 0) {    // if --live is used, result 1
-        livereload = true;
-    }
-
-    if (cmdArguments.indexOf("watch")) {
-        if (watch_js === false && cmdArguments.indexOf("js") >= 0) {
-            watch_js = true;
-        }
-        if (watch_xml === false && cmdArguments.indexOf("xml") >= 0) {
-            watch_xml = true;
-        }
-        if (watch_phtml === false && cmdArguments.indexOf("phtml") >= 0) {
-            watch_phtml = true;
-        }
-        if (watch_html === false && cmdArguments.indexOf("html") >= 0) {
-            watch_html = true;
-        }
-        if (watch_media === false && cmdArguments.indexOf("media") >= 0) {
-            watch_media = true;
-        }
-        if (notify_all === false && cmdArguments.indexOf("notify") >= 0) {
-            notify_all = true;
-        }
-    }
-
-    var lessFiles = [];
-    var cssFiles = [];
-    var themeList = [];
-    var staticFolders = [];
-    var pathsThemes = [];
-    var skipThemeCheck = false;   // Skip Theme Check Declaration (for direct command)
-    var themeName = '';   // Skip Theme Check Declaration (for direct command)
-
-}
 
 
 /* ===========================================================
  - Prepares Data for Specific Tasks
  ============================================================ */
-if(command === 'deploy') {
-    var deployCommand = '';
-    if(deployTask && !cmdArguments[0]) {  //if default task is enabled & command haven't arguments
-        deployCommand = deployTaskConfig.defaultTask;
-        gutil.log('Loading ',gutil.colors.yellow('Gulp Default Task: '), gutil.colors.green(deployCommand));
-        skipThemeCheck = true;
-        pathsThemes = deployTaskConfig.staticFolderToClear;
-    }
-    else if(deployTask && cmdArguments[0] === 'all') {
-        gutil.log('Run',gutil.colors.yellow('global deploy'));
-        skipThemeCheck = false;
-    }
-    else {
-        //TODO: to expand function for accept parameters
-        if (cmdArguments[0]) {
-            deployCommand += ' --language ' + cmdArguments[0];
-        }
-        if (cmdArguments[1]) {
-            themeName = cmdArguments[1];
-            deployCommand += ' --theme ' + themesConfigs[themeName].name;
-        }
-    }
+if(command === 'less' && lessConfigs.singletheme ) {
+    themeName = lessConfigs.singletheme;
 }
 else if(command === 'exec') {
     var execCommand = '';
-    if(deployTask && !cmdArguments[0]) {  //if default task is enabled & command haven't arguments
-        execCommand = execTaskConfig.defaultTask;
-        gutil.log('Loading ',gutil.colors.yellow('Gulp Default Task: '), gutil.colors.green(execCommand));
-        skipThemeCheck = true;
-        pathsThemes = execTaskConfig.staticFolderToClear;
-    }
-    else {
-        //TODO: to expand function for accept parameters
-        if (cmdArguments[0]) {
-            themeName = cmdArguments[0];
-            execCommand += ' --locale="' + themesConfigs[themeName].locale + '" --area="' + themesConfigs[themeName].area + '" --theme="' + themesConfigs[themeName].name + '"';
-        }
-    }
 }
-else if(command === 'clear' || command === 'developer') {
-    skipThemeCheck = true;
-    var clearCacheParam = cmdArguments[0];
-}
-else if(command === 'watch' && watchConfigs.singletheme !== false) {
-    themeName = watchConfigs.singletheme;
-}
-else if(command === 'install') {
-    skipThemeCheck = true;
+else if(command === 'watch' && lessConfigs.singletheme) {
+    themeName = lessConfigs.singletheme;
 }
 else {
     themeName = cmdArguments[0];
@@ -286,17 +141,21 @@ else {
 /* ===========================================================
  - Get themes paths
  ============================================================ */
-if(!skipThemeCheck) {
+
+var paths = [];
+if(command == 'watch'|| command == 'exec' || command == 'less') {
     if (!themeName) {
+
         gutil.log('No theme specified...');
         gutil.log('Get All theme availables....');
         for (i in themesConfigs) {
             var path = './pub/static/' + themesConfigs[i].area + '/' + themesConfigs[i].name + '/' + themesConfigs[i].locale + '/';
-            if (!pathsThemes.includes(path)) {
-                pathsThemes.push(path);
+
+            if (!paths.includes(path)) {
+                paths.push(path);
             }
 
-            var vendorPath = '';   // TODO: manage multiple vendor path
+            //  var vendorPath = '';   // TODO: manage multiple vendor path
             //srcImage.push(vendorPath + 'images/',vendorPath + 'media/');
 
             // Add LESS theme files
@@ -311,20 +170,23 @@ if(!skipThemeCheck) {
             staticFolders.push('./pub/static/' + themesConfigs[i].area + '/' + themesConfigs[i].name);
 
         }
-    }
-    else {
+    } else {
         gutil.log('Declared Theme: ', gutil.colors.green(themeName));
+        if (!themesConfigs[themeName]) {
+            gutil.log('Theme ' + [themeName] + ' not exist.');
+            process.exit();
+        }
         var path = './pub/static/' + themesConfigs[themeName].area + '/' + themesConfigs[themeName].name + '/' + themesConfigs[themeName].locale + '/';
-        pathsThemes.push(path);
+        paths.push(path);
 
-        vendorPath = 'vendor/' + vendorPathConfigs[themeName];
+        /* vendorPath = 'vendor/' + vendorPathConfigs[themeName];
 
         srcImage.push(vendorPath + 'web/images/*',vendorPath + 'media/*');
         if(watch_img_folders) {
             for (i in watch_img_folders ) {
                 srcImage.push(vendorPath + watch_img_folders[i]);
             }
-        }
+        } */
 
         /// Add LESS theme files
         for (i in themesConfigs[themeName].files) {
@@ -334,9 +196,11 @@ if(!skipThemeCheck) {
         for (i in themesConfigs[themeName].files) {
             cssFiles.push(path + themesConfigs[themeName].files[i] + '.' + 'css');
         }
+        themeList.push(themesConfigs[themeName].name);
         staticFolders.push('./pub/static/' + themesConfigs[themeName].area + '/' + themesConfigs[themeName].name);
     }
 }
+
 
 
 
@@ -348,25 +212,23 @@ gulp.task('default', ['less']);
 
 
 gulp.task('less', function() {
-    console.log('================================================================');
-    gutil.log('Compiling \x1b[1m\x1b[92mLess\x1b[0m  - \x1b[1m\x1b[92m' + lessFiles.length + ' files \x1b[0m - \x1b[1m\x1b[92m' + themeList.length + ' themes:\x1b[0m' );
+    gulp.cdebug('==============================================================');
+    gulp.cdebug('Compiling \x1b[1m\x1b[92mLess\x1b[0m  - \x1b[1m\x1b[92m' + lessFiles.length + ' files \x1b[0m - \x1b[1m\x1b[92m' + themeList.length + ' themes:\x1b[0m' );
 
     // GET list theme processed
     for (c=0; c <= themeList.length - 1; c++) {
-        console.log(' - \x1b[92m' + themeList[c] + ' theme \x1b[0m');
+        gulp.cdebug('Theme:');
+        gulp.cdebug('- \x1b[92m' + themeList[c] + ' theme \x1b[0m');
     }
-
-    console.log('------------------------------------------');
 
     // Get list file less to compile
+    gulp.cdebug('Files:');
     for (i in lessFiles) {
-        console.log(' - \x1b[92m',lessFiles[i],'\x1b[0m');
+        gulp.cdebug('- \x1b[92m' + lessFiles[i] +'\x1b[0m');
     }
 
-    console.log('------------------------------------------');
-
     gulp.src(lessFiles)
-    // Source map
+        // Source map
         .pipe(gulpif(sourceMaps, sourcemaps.init({largeFile: true})))
         // Less compilation
         .pipe(less().on('error', function(err) {
@@ -385,7 +247,7 @@ gulp.task('less', function() {
     // Live reload
     //.pipe(gulpif(liveReload, livereload()))   // Not Work for injection,  TODO: resolve this bug
 
-    console.log('------------------------------------------');
+    gulp.cdebug('==============================================================');
 });
 
 // Reload BrowserSync
@@ -398,31 +260,32 @@ gulp.task('browser-sync', function (cb) {
 
 // Watcher task
 gulp.task('watch', function() {
-    //TODO: Watch multiple themes
-    if(!themeName){
-        gutil.log('\x1b[31mPlease specify a theme"\x1b[0m');
-        process.exit();
+
+    gulp.cdebug('==============================================================');
+    if (liveReload > 0) {
+        gulp.cdebug('- Livereload:\x1b[32m', ' * Enabled *','\x1b[0m');
+        livereload.listen();
+        gulp.cdebug('==============================================================');
     }
-    console.log('================================================================');
-    gutil.log( 'Watching \x1b[1m\x1b[92m', themesConfigs[themeName].area + '/' + themesConfigs[themeName].name  ,'\x1b[0m' );
-
-    /* if (liveReload > 0) {
-     console.log('- Livereload:\x1b[32m', ' * Enabled *','\x1b[0m');
-     livereload.listen();
-     } */
-
-    console.log('------------------------------------------');
 
     // Init browsersync
     if(browsersyncOn) {
-        gutil.log('- BrowserSync:\x1b[32m', ' Initializing..........','\x1b[0m');
-        browserSync.init(browsersyncConfigs.configs);
-        console.log('------------------------------------------');
+        gulp.cdebug('- BrowserSync:\x1b[32m  Initializing.......... \x1b[0m');
+        browserSync.init(browsersyncConfigs);
+        gulp.cdebug('==============================================================');
     }
+    // GET list theme processed
+    for (c=0; c <= themeList.length - 1; c++) {
+        gutil.log( 'Watching \x1b[1m\x1b[92m', themeList[c]  ,'\x1b[0m' );
+    }
+    pathsToWatch = paths.map(i => i + '**/*.less');
+    gulp.watch(pathsToWatch,['less']);
 
-    // Watch less files
-    gulp.watch([path + '**/*.less'],['less']);
+    gulp.cdebug('Paths to watch');
+    gulp.cdebug('- BrowserSync:\x1b[32m' + pathsToWatch + '\x1b[0m');
+    gulp.cdebug('==============================================================');
 
+    /*
     // Watch Images & media
     if(watch_media) {
         gulp.watch('vendor/bitbull/theme-frontend-goldenpoint/web/images/*', function (event) {
@@ -449,10 +312,12 @@ gulp.task('watch', function() {
             }
         });
     }
+   */
 
     // Watch all files & notify for files added or deleted
+    /*
     if(notify_all) {
-        gulp.watch([vendorPath + '/**/*'], function (event) {
+        gulp.watch([vendorPath + '/4**4/4*4'], function (event) {
             if(!watch_media || !extPermittedMedia.includes(ext(event.path))) {
                 if (event.type === 'deleted' || event.type === 'added') {
                     gutil.log(gutil.colors.red('--------------------------------------------------------------------'));
@@ -466,31 +331,8 @@ gulp.task('watch', function() {
             }
         });
     }
+    */
 
-    if(watch_js) {
-        gutil.log('Add \x1b[32mJS files\x1b[0m to watching...');
-        gulp.watch([path + '**/*.js'],['browser-sync']).on('change', function(changed, stats) {
-            gutil.log('Changed File: \x1b[36m' + changed.path + '\x1b[0m');
-        });
-    }
-    if(watch_html) {
-        gutil.log('Add \x1b[32m.html files\x1b[0m to watching...');
-        gulp.watch([path + '**/*.html'],['browser-sync']).on('change', function(changed, stats) {
-            gutil.log('Changed File: \x1b[36m' + changed.path + '\x1b[0m');
-        });
-    }
-    if(watch_phtml) {
-        gutil.log('Add \x1b[32m.phtml files\x1b[0m to watching...');
-        gulp.watch([vendorPath + '**/*.phtml'],['browser-sync']).on('change', function(changed, stats) {
-            gutil.log('Changed File: \x1b[36m' + changed.path + '\x1b[0m');
-        });
-    }
-    if(watch_xml) {
-        gutil.log('Add \x1b[32mlayout xml files\x1b[0m to watching...');
-        gulp.watch([vendorPath + '**/*.xml'],['browser-sync']).on('change', function(changed, stats) {
-            gutil.log('Changed File: \x1b[36m' + changed.path + '\x1b[0m');
-        });
-    }
 
 });
 
@@ -508,11 +350,12 @@ gulp.task('superwatch', function () {
     // Init browsersync
     if(browsersyncOn) {
         gutil.log('- BrowserSync:\x1b[32m', ' Initializing..........','\x1b[0m');
-        browserSync.init(browsersyncConfigs.configs);
+        browserSync.init(browsersyncConfigs);
         console.log('------------------------------------------');
     }
 
-    gulp.watch([vendorPath + '/**/*'], function (event) {
+    /*
+    gulp.watch([vendorPath + '4/**4/4*4'], function (event) {
         if(!watch_media || watch_media && !extPermittedMedia.includes(ext(event.path))) {
             if (event.type === 'deleted' || event.type === 'added') {
                 gutil.log(gutil.colors.red('--------------------------------------------------------------------'));
@@ -525,6 +368,7 @@ gulp.task('superwatch', function () {
             }
         }
     });
+*/
 
 });
 
@@ -532,34 +376,51 @@ gulp.task('superwatch', function () {
 // Exec task
 gulp.task('exec', ['clean','source-theme-deploy']);
 
-gulp.task('deploy', ['clean','static-content-deploy']);
-
-// deploy Static content
-gulp.task('static-content-deploy', function (cb) {
-    gutil.log('Start', gutil.colors.cyan('Deploying Magento application'), '...');
-    exec('php bin/magento setup:static-content:deploy ' + deployCommand +  '', function (err, stdout, stderr) {
-        console.log('\x1b[90m'+ stdout + '\x1b[0m');
-        console.log('\x1b[31m'+ stderr + '\x1b[0m');
-        cb(err);
-    });
-});
 
 
 // dev source theme deploy
 gulp.task('source-theme-deploy', function (cb) {
-    exec('php bin/magento dev:source-theme:deploy ' + execCommand + '', function (err, stdout, stderr) {
-        console.log('\x1b[90m'+ stdout + '\x1b[0m');
-        console.log('\x1b[31m'+ stderr + '\x1b[0m');
-        cb(err);
-    });
+
+    gulp.cdebug('==============================================================');
+    gulp.cdebug('SOURCE THEME DEPLOY... ');
+    var themesToDeploy = [];
+    if(!themeName) {
+        themesToDeploy = themesConfigs;
+    }
+    else {
+        themesToDeploy.push(themesConfigs[themeName]);
+    }
+
+
+    gulp.cdebug('Theme to Deploy:');
+    gulp.cdebug(themesToDeploy);
+
+    var allErr = '';
+    for (i in themesToDeploy) {
+        exec('php bin/magento dev:source-theme:deploy ' +
+            ' --locale=' + themesToDeploy[i].locale +
+            ' --area=' + themesToDeploy[i].area +
+            ' --theme=' + themesToDeploy[i].name +
+            ' ' + themesToDeploy[i].files.join(' ') +
+            '', function (err, stdout, stderr) {
+
+            gulp.cdebug('\x1b[90m'+ stdout + '\x1b[0m');
+            gulp.cdebug('\x1b[31m'+ stderr + '\x1b[0m');
+            allErr = err;
+        });
+    }
+    cb(allErr);
 });
 
 
 // cache flush task
 gulp.task('clean', function (cb) {
-    for (i in pathsThemes) {
-        gutil.log('Cleaning ' + gutil.colors.magenta(pathsThemes[i]));
-        gulp.src(pathsThemes[i])
+
+    gulp.cdebug('==============================================================');
+    gulp.cdebug('Clean folder of static files.. ');
+    for (i in paths) {
+        gutil.log('Cleaning ' + gutil.colors.magenta(paths[i]));
+        gulp.src(paths[i])
             .pipe(vinylPaths(del));
     }
     gutil.log('"pub/static" folders specified are empty now.');
@@ -567,33 +428,46 @@ gulp.task('clean', function (cb) {
 
 
 // cache flush task
-gulp.task('clear', function (cb) {
-    exec('php bin/magento cache:' + clearCacheParam, function (err, stdout, stderr) {
-        gutil.log(clearCacheParam + ' cache.......');
-        console.log('\x1b[90m'+ stdout + '\x1b[0m');
-        console.log('\x1b[31m'+ stderr + '\x1b[0m');
+gulp.task('cache-clear', function (cb) {
+    gulp.cdebug('==============================================================');
+    gulp.cdebug('CACHE FLUSH ');
+    exec('php bin/magento cache:flush' , function (err, stdout, stderr) {
+        gutil.log('Clearing cache.......');
+        gulp.cdebug('\x1b[90m'+ stdout + '\x1b[0m');
+        gulp.cdebug('\x1b[31m'+ stderr + '\x1b[0m');
+        cb(err);
+    });
+});
+
+// cache flush task
+gulp.task('cache-disable', function (cb) {
+    gulp.cdebug('==============================================================');
+    gulp.cdebug('DISABLE SPECIFIC CACHE ');
+    exec('php bin/magento cache:disable ' + configPath.options.cache_disable , function (err, stdout, stderr) {
+        gutil.log('Disabling specific cache: ' + configPath.options.cache_disable);
+        gulp.cdebug('\x1b[90m'+ stdout + '\x1b[0m');
+        gulp.cdebug('\x1b[31m'+ stderr + '\x1b[0m');
         cb(err);
     });
 });
 
 
 gulp.task('developer', function (cb) {
+    gulp.cdebug('==============================================================');
+    gulp.cdebug('DEPLOY MODE DEVELOPER ');
     exec('php ' + rootToPath + 'bin/magento deploy:mode:set developer', function (err, stdout, stderr) {
         gutil.log('Setting Developer Mode.......');
-        gutil.log('\x1b[32m'+ stdout + '\x1b[0m');
-        console.log('\x1b[31m'+ stderr + '\x1b[0m');
+        gulp.cdebug('\x1b[32m'+ stdout + '\x1b[0m');
+        gulp.cdebug('\x1b[31m'+ stderr + '\x1b[0m');
         cb(err);
     });
 });
 
 
 gulp.task('prepare-dev', function(cb) {
-    runSequence('developer','cache-disable','clear', cb);
+    runSequence('developer','cache-clear','cache-disable', cb);
 });
-
-// TODO:  integrate CSS e LESS lint
 
 
 // Load Custom Extra Tasks
-require('gulp-task-loader')(configPathTaskLoader + 'gulp-tasks');
-
+require('gulp-task-loader')('./dev/gulp-tasks');

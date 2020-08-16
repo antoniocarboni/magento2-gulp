@@ -1,43 +1,42 @@
 # magento2-gulp
 
-[![Latest Release][ico-version]][link-release]
-
 
 A new gulpfile for Magento 2
 
 
-## Requirements
-- Node.js
-- Unix-like OS
-
 ## Installation
 1. Update your composer.json file:
 ```
-“require”: {
+“require-dev”: {
 	...
-	“antoniocarboni/magento2-gulp”:"1.0.*”
+	“antoniocarboni/magento2-gulp”:"2.0.*”
 },
 
  "repositories": [
-    { "type": "vcs", "url":  "https://github.com/antoniocarboni/magento2-gulp" }
+    { "type": "vcs", "url":  "https://github.com/magenio-it/magento2-gulp" }
     ],
     
 ```
-2. Go to directory `cd vendor/antoniocarboni/magento2-gulp`
-3. Run `npm install`
-4. Run `gulp install` 
-5. Define your gulp configuration in `dev/configs.js`
-6. This gulpfile uses a default grunt configuration for get the list of themes; for this reason, you have to change the default config file in `dev/tools/grunt/configs/themes.js`
+2. Run composer update
+3. Install node.js
+4. Rename `package.gulp.json.sample` to `package.json`
+5. Run `npm install`
+6. Install gulp globally using `npm install -g gulp-cli`
+7. Define your gulp configuration in `dev/gulp-configs.js` using the file sample gulp-configs.sample.js
 
 ## configs.js structure
-The file `dev/configs.js` for this gulpfile has some options:
+The file `gulp-configs.js` for this gulpfile has some options:
 
 ### options
-- `sourcemap`: creates sourcemap during less compilation (true/false)
-- `ninicss`: minify the compiled styles (true/false)
+- `debug`: enable verbose mode (true/false)
 - `liveReload`: enable LiveReload Plugin (true/false)
+- `browsersync`: enable Browsersync Plugin (true/false)
+- `cache-disable`: cache to keep disabled to default on developer mode
+### less
+- `sourcemap`: creates sourcemap during less compilation (true/false)
+- `singletheme`: if set, the less task will only watch the specified theme to improve the speed of compile
+
 ### watch
-- `singletheme`: if set, the watch task without arguments will only watch a specified theme as if it was declared (theme-name / false)
 - `js`: Enables watch task for .js files (true/false)
 - `layout`: Enables watch task for .xml files (true/false)
 - `template`: Enables watch task for .phtml files (true/false)
@@ -54,38 +53,17 @@ The file `dev/configs.js` for this gulpfile has some options:
 - `defaultTask`:  default task to run if enableDefaultTask is enabled
 - `staticFolderToClear`: set full path of pub/static theme to clear before to soure theme deploy.
 ### browsersync
-- `enabled`: enable browsersync
 for more informations & all configurations visit [https://browsersync.io/docs](https://browsersync.io/docs) 
-### mapVendor
-- used to map theme's name with original vendor path
 
-## Tasks List
-- `install`: installs gulpfile in to Magento2 root & creates a configPath file
+## Tasks List 
 - `prepare-dev`: set developer mode & diables cache
 - `default`: run less task
 - `less`: compiles LESS files. Parameters:
 - - `--[nometema]`: compile only for specific theme
-- - `--map`: generates sourcemaps
-- - `--min`: minify the css files compiled
-- - `--sync`: enable BrowserSync
-- - `--live`: enable LiveReload (it isn't working for now )
 - `watch`: Watch for file changes and run processing task and/or browserSync reloading:
 - - `--[nometema]`: watch only specific theme
-- - `--map`: generates sourcemaps
-- - `--min`: minify the css files compiled
-- - `--sync`: enable BrowserSync
-- - `--live`: enable LiveReload (it isn't working for now )
-- - `--js`: watch also .js files
-- - `--xml`: watch also xml layout files
-- - `--phtml`: watch also .phtml files
-- - `--html`: watch also .html files
 - `browser-sync`: reload the browser page
-- `exec`: executes dev:source-theme:deploy command 
-- `deploy`: clean & deploy static file to pub/static.
-- `clean`: cleans pub/static folder
-- `clear`: clear Magento2 Cache
-- - `clean`: cleans cache
-- - `disable`: disables cache
-- - `enable`: enables cache
-- - `flush`: flushes cache storage
+- `exec`: executes dev:source-theme:deploy command
+- `cache-disable`: disable specific cache
+- `cache-clear`: clear Magento2 Cache
 - `developer`: set Magento2 to developer mode
