@@ -10,6 +10,7 @@
             ["dev/gulp-tasks", "dev/gulp-tasks"],
             ["dev/config.js.sample", "dev/config.js.sample"],
             ["package.gulp.json.sample", "package.gulp.json.sample"]
-        ]
+        ],
+        "magento-deploystrategy": "copy"
     }
 }
