@@ -3,5 +3,13 @@
   "description": "New Magento2 gulpfile",
   "version": "1.0.0",
   "license": "MIT",
-  "type": "magento2-component"
+  "type": "magento2-component",
+    "extra": {
+        "map": [
+            [ "gulpfile.js", "gulpfile.js"],
+            ["dev/gulp-tasks", "dev/gulp-tasks"],
+            ["dev/config.js.sample", "dev/config.js.sample"],
+            ["package.gulp.json.sample", "package.gulp.json.sample"]
+        ]
+    }
 }
