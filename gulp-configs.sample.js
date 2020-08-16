@@ -13,13 +13,12 @@ module.exports = {
         minicss: true,
     },
     watch: {
-        js: true,
-        template: true,
-        layout: true,
-        html: true,
-        media: true,
-        mediaFolders: [ 'web/video/*' ],
-        notifyAll: true
+    },
+    supwatch: {
+        extensionPermitted: ['png','jpg','jpeg','gif','svg','ico','bmp','tiff','exif','bat', 'html','js','json'],
+        folderCustomTheme: 'app',
+        notifyAll: true,
+        notifyExt: ['xml','phtml','php']
     },
     exec: {
         enableDefaultTask: true,

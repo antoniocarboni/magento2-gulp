@@ -37,17 +37,11 @@ The file `gulp-configs.js` for this gulpfile has some options:
 - `singletheme`: if set, the less task will only watch the specified theme to improve the speed of compile
 
 ### watch
-- `js`: Enables watch task for .js files (true/false)
-- `layout`: Enables watch task for .xml files (true/false)
-- `template`: Enables watch task for .phtml files (true/false)
-- `html`: Enables watch task for .html files (true/false)
-- `media`: Enables watch task for media files (true/false)
-- `mediaFolders`: add custom folders used for images, video or others file which aren't managed by magento direclty and which will contain new files; paths starts on root theme path
-- `notifyAll`: Watch everything on vendor folder theme. The watch task will notice changes (added or deleted files) that require an 'gulp exec' for generate symlinks in pub folder 
-### deploy
-- `enableDefaultTask`: if set, task deploy without arguments uses a default task set (true/false)
-- `defaultTask`:  default task to run if enableDefaultTask is enabled
-- `staticFolderToClear`: set full path of pub/static theme to clear before deploy.
+### supwatch
+- `extensionPermitted`:  specific extensions to check for create symlinks on pub/static directory
+- `folderCustomTheme`: directory where custom theme is located.  For now superwatch works only with single custom theme at a time. Use 'app' for custom theme in app/design/ or 'Vendorname/themename' for custom theme managed with composer
+- `notifyAll`: notify changes for files that don't require the symlink on pub/static
+- `notifyExt`: add specific file extensions filter for notifications
 ### exec
 - `enableDefaultTask`: if set, task deploy without arguments uses a default task set (true/false)
 - `defaultTask`:  default task to run if enableDefaultTask is enabled
@@ -62,6 +56,7 @@ for more informations & all configurations visit [https://browsersync.io/docs](h
 - - `--[nometema]`: compile only for specific theme
 - `watch`: Watch for file changes and run processing task and/or browserSync reloading:
 - - `--[nometema]`: watch only specific theme
+- `superwatch`: Watch less files and create and delete symlinks automatically on pub/static without run 'exec' command
 - `browser-sync`: reload the browser page
 - `exec`: executes dev:source-theme:deploy command
 - `cache-disable`: disable specific cache

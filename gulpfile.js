@@ -1,8 +1,8 @@
 /*****************************************************************************
- ** Author: Antonio Carboni
- ** Email: a.carboni@magenio.com
- ** Website: https://www.magenio.com/
- ****************************************************************************/
+ *  =========================== OPTIONS ====================================
+ *
+ *
+ ******************************************************************************/
 
 
 
@@ -72,12 +72,14 @@ configPath = require('./gulp-configs');
 gulpConfigs = configPath.options,
     lessConfigs = configPath.less,
     watchConfigs = configPath.watch,
+    supwatchConfigs = configPath.supwatch,
     browsersyncConfigs = configPath.browsersync
-execTaskConfig = configPath.exec
+execTaskConfig = configPath.exec;
+
 
 gulp.cdebug('==============================================================');
 gulp.cdebug('gulp configs:');
-gulp.cdebug(configPath);
+gulp.cdebug(JSON.stringify(configPath, null, 4));
 gulp.cdebug('==============================================================');
 
 /* ==========================================================================
@@ -88,26 +90,18 @@ var sourceMaps = gulpConfigs.sourcemap;
 var minicss = gulpConfigs.minicss;
 var liveReload = gulpConfigs.liveReload;
 var browsersyncOn = gulpConfigs.browsersync;
-var watch_js = watchConfigs.js;
-var watch_xml = watchConfigs.layout;
-var watch_phtml = watchConfigs.template;
-var watch_html = watchConfigs.html;
-var watch_media = watchConfigs.media;
-var notify_all = watchConfigs.notifyAll;
-var watch_img_folders = watchConfigs.mediaFolders;
 
-var srcImage = [];
 
 if(gruntLocalThemes) {
     themesConfigs = gruntLocalThemes;
     gulp.cdebug('Loaded local-themes.js:');
-    gulp.cdebug(themesConfigs);
+    gulp.cdebug(JSON.stringify(themesConfigs, null, 4));
     gulp.cdebug('==============================================================');
 }
 else {
     themesConfigs = gruntThemes;
     gulp.cdebug('Loaded themes.js:');
-    gulp.cdebug(themesConfigs);
+    gulp.cdebug(JSON.stringify(themesConfigs, null, 4));
     gulp.cdebug('==============================================================');
 }
 
@@ -133,6 +127,9 @@ else if(command === 'exec') {
 else if(command === 'watch' && lessConfigs.singletheme) {
     themeName = lessConfigs.singletheme;
 }
+else if(command === 'superwatch' && lessConfigs.singletheme) {
+    themeName = lessConfigs.singletheme;
+}
 else {
     themeName = cmdArguments[0];
 }
@@ -143,16 +140,27 @@ else {
  ============================================================ */
 
 var paths = [];
-if(command == 'watch'|| command == 'exec' || command == 'less') {
+var appPaths = [];
+var vendorPaths = [];
+if(command == 'watch'|| command == 'superwatch'|| command == 'exec' || command == 'less') {
     if (!themeName) {
 
         gutil.log('No theme specified...');
         gutil.log('Get All theme availables....');
         for (i in themesConfigs) {
             var path = './pub/static/' + themesConfigs[i].area + '/' + themesConfigs[i].name + '/' + themesConfigs[i].locale + '/';
-
             if (!paths.includes(path)) {
                 paths.push(path);
+            }
+
+            if(supwatchConfigs.folderCustomTheme == 'app') {
+                var appPath = 'app/design/' + themesConfigs[i].area + '/' + themesConfigs[i].name + '/';
+                if (!appPaths.includes(appPath)) {
+                    appPaths.push(appPath);
+                }
+            }
+            else {
+                var vendorThemePath = supwatchConfigs.folderCustomTheme;
             }
 
             //  var vendorPath = '';   // TODO: manage multiple vendor path
@@ -178,6 +186,15 @@ if(command == 'watch'|| command == 'exec' || command == 'less') {
         }
         var path = './pub/static/' + themesConfigs[themeName].area + '/' + themesConfigs[themeName].name + '/' + themesConfigs[themeName].locale + '/';
         paths.push(path);
+
+
+        if(supwatchConfigs.folderCustomTheme == 'app') {
+            var appPath = 'app/design/' + themesConfigs[themeName].area + '/' + themesConfigs[themeName].name + '/';
+            appPaths.push(appPath);
+        }
+        else {
+            var vendorThemePath = supwatchConfigs.folderCustomTheme;
+        }
 
         /* vendorPath = 'vendor/' + vendorPathConfigs[themeName];
 
@@ -208,7 +225,6 @@ if(command == 'watch'|| command == 'exec' || command == 'less') {
  - TASKS
  ============================================================ */
 
-gulp.task('default', ['less']);
 
 
 gulp.task('less', function() {
@@ -249,6 +265,9 @@ gulp.task('less', function() {
 
     gulp.cdebug('==============================================================');
 });
+
+
+gulp.task('default', ['less']);
 
 // Reload BrowserSync
 gulp.task('browser-sync', function (cb) {
@@ -337,46 +356,86 @@ gulp.task('watch', function() {
 });
 
 gulp.task('superwatch', function () {
-    //TODO: Watch multiple themes
-    if(!themeName){
-        gutil.log('\x1b[31mPlease specify a theme"\x1b[0m');
-        process.exit();
-    }
-    console.log('================================================================');
-    gutil.log( 'Watching \x1b[1m\x1b[92m', themesConfigs[themeName].area + '/' + themesConfigs[themeName].name  ,'\x1b[0m' );
 
-    console.log('------------------------------------------');
+    gulp.cdebug('==============================================================');
+    gulp.cdebug('========================= SUPER WATCH ========================');
+    runSequence('watch');
 
-    // Init browsersync
-    if(browsersyncOn) {
-        gutil.log('- BrowserSync:\x1b[32m', ' Initializing..........','\x1b[0m');
-        browserSync.init(browsersyncConfigs);
-        console.log('------------------------------------------');
-    }
+    // Watch all files & notify for files added or deleted
 
-    /*
-    gulp.watch([vendorPath + '4/**4/4*4'], function (event) {
-        if(!watch_media || watch_media && !extPermittedMedia.includes(ext(event.path))) {
-            if (event.type === 'deleted' || event.type === 'added') {
-                gutil.log(gutil.colors.red('--------------------------------------------------------------------'));
-                gutil.log(gutil.colors.red('--------------------------------------------------------------------'));
-                gutil.log(gutil.colors.red('!!! - You have ' + event.type + ' a File: \x1b[91m' + event.path + '\x1b[0m'));
-                gutil.log(gutil.colors.red('!!! - You need to stop watch task and run "\x1b[91mgulp exec --' + themeName + '"\x1b[0m'));
-                gutil.log(gutil.colors.red('--------------------------------------------------------------------'));
-                gutil.log(gutil.colors.red('--------------------------------------------------------------------'));
+    extensions = configPath.supwatch.extensionPermitted;
 
+    if(supwatchConfigs.folderCustomTheme == 'app') { pathsToWatch = appPaths.map(i => i + '**/*') }
+    else { pathsToWatch = ['vendor/' + vendorThemePath + '**/*'] }
+
+
+    gulp.cdebug('========================= SUPER WATCH ========================');
+    gulp.watch(pathsToWatch, function(event) {
+
+        gulp.cdebug('Event:');
+        gulp.cdebug(event);
+        gulp.cdebug('Watching on:');
+        gulp.cdebug(event);
+        gulp.cdebug(ext(event.path));
+        if(extensions.includes(ext(event.path))) {
+            var symlink = require('gulp-symlink');
+            var delSymlink = require('del-symlinks');
+            gutil.log('You have ' + event.type + ' a File: \x1b[1m' + event.path + '\x1b[0m');
+            if(supwatchConfigs.folderCustomTheme == 'app') {
+                var partialPathChanged = event.path.replace(process.cwd() + '/app/design/' +
+                    themesConfigs[themeName].area + '/'
+                    + themesConfigs[themeName].name + '/', '');
             }
+
+            else {
+                var partialPathChanged = event.path.replace(process.cwd() + 'vendor/' + vendorThemePath)
+            }
+
+            partialPathChanged = partialPathChanged.replace('web/', '');
+            gulp.cdebug('PartialPathChanged:');
+            gulp.cdebug(partialPathChanged);
+
+            var pubDestPath = process.cwd() + '/pub/static/' +
+                themesConfigs[themeName].area + '/'
+                + themesConfigs[themeName].name + '/'
+                + themesConfigs[themeName].locale + '/';
+
+            gulp.cdebug('pubDestPath:');
+            gulp.cdebug(pubDestPath);
+
+            if (event.type === 'deleted') {
+                delSymlink(pubDestPath + partialPathChanged);
+                gutil.log(gutil.colors.red('Deleted symlink from: \x1b[91m' + pubDestPath + partialPathChanged + '\x1b[0m'));
+            }
+            if(event.type === 'added') {
+                gulp.src(event.path)
+                    .pipe(symlink(pubDestPath + partialPathChanged));
+                gutil.log(gutil.colors.green('Added symlink from: \x1b[32m' + pubDestPath + partialPathChanged + '\x1b[0m'));
+            }
+
         }
+        if(supwatchConfigs.notifyAll &&  supwatchConfigs.notifyExt.includes(ext(event.path))) {
+            gutil.log('You have ' + event.type + ' a File: \x1b[33m' + event.path + '\x1b[0m');
+        }
+
     });
-*/
+
 
 });
 
 
-// Exec task
-gulp.task('exec', ['clean','source-theme-deploy']);
+// cache flush task
+gulp.task('clean', function (cb) {
 
-
+    gulp.cdebug('==============================================================');
+    gulp.cdebug('Clean folder of static files.. ');
+    for (i in paths) {
+        gutil.log('Cleaning ' + gutil.colors.magenta(paths[i]));
+        gulp.src(paths[i])
+            .pipe(vinylPaths(del));
+    }
+    gutil.log('"pub/static" folders specified are empty now.');
+});
 
 // dev source theme deploy
 gulp.task('source-theme-deploy', function (cb) {
@@ -413,18 +472,8 @@ gulp.task('source-theme-deploy', function (cb) {
 });
 
 
-// cache flush task
-gulp.task('clean', function (cb) {
-
-    gulp.cdebug('==============================================================');
-    gulp.cdebug('Clean folder of static files.. ');
-    for (i in paths) {
-        gutil.log('Cleaning ' + gutil.colors.magenta(paths[i]));
-        gulp.src(paths[i])
-            .pipe(vinylPaths(del));
-    }
-    gutil.log('"pub/static" folders specified are empty now.');
-});
+// Exec task
+gulp.task('exec', ['clean','source-theme-deploy']);
 
 
 // cache flush task
